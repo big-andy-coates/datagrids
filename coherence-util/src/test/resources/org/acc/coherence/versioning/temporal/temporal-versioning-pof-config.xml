@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<!-- Note: To add custom types, create a new 'pof-config.xml' file
+     containing your custom user-type elements, and place it at the
+     beginning of the class path. -->
+
+<pof-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns="http://xmlns.oracle.com/coherence/coherence-pof-config"
+            xsi:schemaLocation="http://xmlns.oracle.com/coherence/coherence-pof-config coherence-pof-config.xsd">
+    <user-type-list>
+        <include>pof-config.xml</include>
+
+        <!-- Versioning -->
+        <user-type>
+            <type-id>40000</type-id>
+            <class-name>org.acc.coherence.versioning.temporal.VKey</class-name>
+        </user-type>
+
+        <user-type>
+            <type-id>40001</type-id>
+            <class-name>org.acc.coherence.versioning.temporal.VValue</class-name>
+        </user-type>
+
+        <user-type>
+            <type-id>40002</type-id>
+            <class-name>org.acc.coherence.versioning.temporal.VValue$MetaData</class-name>
+        </user-type>
+
+        <user-type>
+            <type-id>40003</type-id>
+            <class-name>org.acc.coherence.versioning.temporal.SyntheticIndexAwareExtractor</class-name>
+        </user-type>
+
+        <user-type>
+            <type-id>40004</type-id>
+            <class-name>org.acc.coherence.versioning.temporal.SyntheticIndexFunctionalTest$IndexCountingFilter
+            </class-name>
+        </user-type>
+
+        <user-type>
+            <type-id>40006</type-id>
+            <class-name>org.acc.coherence.versioning.temporal.VersionedEntrySequencer</class-name>
+        </user-type>
+
+        <user-type>
+            <type-id>40007</type-id>
+            <class-name>org.acc.coherence.test.EnsureCacheInvocable</class-name>
+        </user-type>
+
+    </user-type-list>
+</pof-config>
