@@ -17,7 +17,7 @@ import java.util.Map;
 @Portable
 public class SyntheticIndexAwareExtractor implements IndexAwareExtractor {
     @PortableProperty(value = 1)
-    private ValueExtractor syntheticExtractor;
+    private SyntheticExtractor syntheticExtractor;
 
     @PortableProperty(value = 2)
     private ValueExtractor actualExtractor;
@@ -30,7 +30,7 @@ public class SyntheticIndexAwareExtractor implements IndexAwareExtractor {
     public SyntheticIndexAwareExtractor() {
     }
 
-    public SyntheticIndexAwareExtractor(ValueExtractor syntheticExtractor, ValueExtractor actualExtractor, EntrySequencer actualKeyCalculator) {
+    public SyntheticIndexAwareExtractor(SyntheticExtractor syntheticExtractor, ValueExtractor actualExtractor, EntrySequencer actualKeyCalculator) {
         Validate.notNull(syntheticExtractor);
         Validate.notNull(actualExtractor);
         Validate.notNull(actualKeyCalculator);

@@ -1,10 +1,10 @@
 package org.acc.coherence.versioning.temporal;
 
+import com.tangosol.io.Serializer;
 import com.tangosol.io.pof.annotation.Portable;
 import com.tangosol.net.BackingMapContext;
-import com.tangosol.util.Binary;
-import com.tangosol.util.BinaryEntry;
-import com.tangosol.util.ExternalizableHelper;
+import com.tangosol.net.BackingMapManagerContext;
+import com.tangosol.util.*;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Map;
@@ -42,6 +42,7 @@ public class VersionedEntrySequencer implements EntrySequencer {
             return context.getReadOnlyEntry(nextKey);
         }
 
+        final boolean isBinaryEntry = entry instanceof BinaryEntry;
         final BinaryEntry binaryEntry = (BinaryEntry) entry;
         final Binary undecorated = serialiseKey(nextKey, context);
 //        InvocableMap.Entry entry1 = context.getReadOnlyEntry(nextKey);  // todo(ac): would be nice to be able to do this - but unsupported within index.
@@ -61,7 +62,7 @@ public class VersionedEntrySequencer implements EntrySequencer {
         for (Map.Entry<Binary, Binary> e : backingMap.entrySet()) {
             Binary naked = ExternalizableHelper.removeIntDecoration(e.getKey());
             if (naked.equals(undecorated)) {
-                return e;
+                return isBinaryEntry ? asBinaryEntry(e, context) : e;
             }
         }
         return null;    // Not found
@@ -69,5 +70,115 @@ public class VersionedEntrySequencer implements EntrySequencer {
 
     private Binary serialiseKey(VKey key, BackingMapContext context) {
         return ExternalizableHelper.toBinary(key, context.getManagerContext().getCacheService().getSerializer());
+    }
+
+    private static Map.Entry asBinaryEntry(final Map.Entry<Binary, Binary> entry, final BackingMapContext context) {
+        // Currently only way to ensure BinaryEntry, until getReadOnlyEntry works.
+        return new BinaryEntry() {
+            @Override
+            public Binary getBinaryKey() {
+                return entry.getKey();
+            }
+
+            @Override
+            public Binary getBinaryValue() {
+                return entry.getValue();
+            }
+
+            @Override
+            public Serializer getSerializer() {
+                return context.getManagerContext().getCacheService().getSerializer();
+            }
+
+            @Override
+            public BackingMapManagerContext getContext() {
+                return context.getManagerContext();
+            }
+
+            @Override
+            public void updateBinaryValue(Binary binary) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void updateBinaryValue(Binary binary, boolean b) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Object getOriginalValue() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Binary getOriginalBinaryValue() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public ObservableMap getBackingMap() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public BackingMapContext getBackingMapContext() {
+                return context;
+            }
+
+            @Override
+            public void expire(long l) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public long getExpiry() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean isReadOnly() {
+                return true;
+            }
+
+            @Override
+            public void setValue(Object o, boolean b) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void remove(boolean b) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Object getKey() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Object getValue() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Object setValue(Object o) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void update(ValueUpdater valueUpdater, Object o) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean isPresent() {
+                return true;
+            }
+
+            @Override
+            public Object extract(ValueExtractor valueExtractor) {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 }

@@ -11,11 +11,8 @@ import com.tangosol.util.extractor.PofExtractor;
 @Portable
 public class VValue<DomainValue> implements Versioned<DomainValue> {
     public static final int METADATA_POF_ID = 1;
-    public static final PofExtractor VERSION_POF_EXTRACTED = new PofExtractor(int.class, new SimplePofPath(new int[]{METADATA_POF_ID, MetaData.VERSION_POF_ID}));
+    public static final PofExtractor VERSION_POF_EXTRACTOR = new PofExtractor(int.class, new SimplePofPath(new int[]{METADATA_POF_ID, MetaData.VERSION_POF_ID}));
     public static final PofExtractor CREATED_POF_EXTRACTED = new PofExtractor(long.class, new SimplePofPath(new int[]{METADATA_POF_ID, MetaData.CREATED_POF_ID}));
-    public static final PofExtractor SUPERSEDED_POF_EXTRACTED = new PofExtractor(long.class, -1);
-    public static final SyntheticIndexAwareExtractor CUSTOM_SUPERSEDED_EXTRACTOR = new SyntheticIndexAwareExtractor(
-            VValue.SUPERSEDED_POF_EXTRACTED, VValue.CREATED_POF_EXTRACTED, new VersionedEntrySequencer());
 
     @PortableProperty(value = METADATA_POF_ID)
     private MetaData metaData = new MetaData();
@@ -49,6 +46,10 @@ public class VValue<DomainValue> implements Versioned<DomainValue> {
 
     public void setCreated(long timestamp) {
         metaData.setCreated(timestamp);
+    }
+
+    public long getCreated() {
+        return metaData.getCreated();
     }
 
     @Override
@@ -97,6 +98,10 @@ public class VValue<DomainValue> implements Versioned<DomainValue> {
 
         public void setCreated(long timestamp) {
             created = timestamp;
+        }
+
+        public long getCreated() {
+            return created;
         }
 
         @Override

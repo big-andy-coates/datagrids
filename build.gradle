@@ -1,0 +1,27 @@
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'idea'
+
+	repositories {
+		mavenCentral()
+	}
+	
+	dependencies {
+		compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.3.+'
+		testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: '1.+'
+		testCompile 'org.testng:testng:6.8.+'
+		testCompile 'org.mockito:mockito-all:1.9.+'
+    }
+
+	version = '1.0'
+
+    test {
+        useTestNG()
+
+        testLogging {
+            events = ["skipped", "passed", "failed"]
+
+            displayGranularity = 3
+        }
+    }
+}

@@ -13,11 +13,30 @@ public abstract class ClusterBasedTest {
     private static Config runningConfig = new Config("coherence-cache-config.xml");
 
     protected ClusterBasedTest(String clusterConfig) {
-        runningConfig = new Config(clusterConfig);
+        setConfig(new Config(clusterConfig));
     }
 
     @BeforeClass
     public static void beforeTests() {
+        startCluster();
+    }
+
+    @AfterClass
+    public static void afterTests() {
+        shutdownCluster();
+    }
+
+    private void setConfig(Config newConfig) {
+        if (newConfig.equals(runningConfig)) {
+            return;
+        }
+
+        shutdownCluster();
+        runningConfig = newConfig;
+        startCluster();
+    }
+
+    private static void startCluster() {
         memberGroup = ClusterMemberGroupUtils.newBuilder()
                 .setStorageEnabledCount(2)
                 .setCacheConfiguration(runningConfig.getClusterConfig())
@@ -25,8 +44,7 @@ public abstract class ClusterBasedTest {
                 .buildAndConfigureForStorageDisabledClient();
     }
 
-    @AfterClass
-    public static void afterTests() {
+    private static void shutdownCluster() {
         ClusterMemberGroupUtils.shutdownCacheFactoryThenClusterMemberGroups(memberGroup);
     }
 
