@@ -18,18 +18,18 @@ public class TimeLine {
         this.comparator = comparator;
     }
 
-    public void insert(Object key, Object timestamp) {
-        if (allKeys.contains(key)) {
-            throw new UnsupportedOperationException("Duplicate key detected: " + key);
+    public void insert(Object entry, Object timestamp) {
+        if (allKeys.contains(entry)) {
+            throw new UnsupportedOperationException("Duplicate entry detected: " + entry);
         }
 
-        Set<Object> keys = getKeySet(timestamp, true);
-        keys.add(key);
-        allKeys.add(key);
+        Set<Object> entries = getEntrySet(timestamp, true);
+        entries.add(entry);
+        allKeys.add(entry);
     }
 
     public boolean remove(Object key, Object timestamp) {
-        Set<Object> keys = getKeySet(timestamp, false);
+        Set<Object> keys = getEntrySet(timestamp, false);
         if (keys == null) {
             return false;
         }
@@ -59,7 +59,7 @@ public class TimeLine {
         return allKeys;
     }
 
-    private Set<Object> getKeySet(Object timestamp, boolean createIfNecessary) {
+    private Set<Object> getEntrySet(Object timestamp, boolean createIfNecessary) {
         TreeSet<Object> keys = timeLine.get(timestamp);
         if (keys == null && createIfNecessary) {
             keys = new TreeSet<Object>(comparator);

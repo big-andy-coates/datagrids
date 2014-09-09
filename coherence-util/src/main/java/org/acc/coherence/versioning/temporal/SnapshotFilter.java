@@ -34,8 +34,8 @@ public class SnapshotFilter implements IndexAwareFilter {
     @Override
     public int calculateEffectiveness(Map indexMap, Set keys) {
         getIndex(indexMap);
-        return 1;   // todo(ac): Hard to say without doing all the work - would need to track average timeLine length and then return keys.size() /
-        // average
+        return 1;   // todo(ac): Hard to say without doing all the work
+        // - would need to track average timeLine length and then return keys.size() / average
     }
 
     @Override
@@ -56,8 +56,7 @@ public class SnapshotFilter implements IndexAwareFilter {
 
     @Override
     public boolean evaluateEntry(Map.Entry entry) {
-        // Todo(aC):
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -71,7 +70,8 @@ public class SnapshotFilter implements IndexAwareFilter {
             return (TemporalIndex) index;
         }
 
-        throw new UnsupportedOperationException("SnapshotFilter requires a matching temporal index that uses the supplied temporal extractor");
+        throw new UnsupportedOperationException("SnapshotFilter requires a matching temporal index that uses the supplied temporal extractor. " +
+                "Found: " + index);
     }
 
     private Object filterEntry(Object fullKey, TemporalIndex index, Set allKeys) {

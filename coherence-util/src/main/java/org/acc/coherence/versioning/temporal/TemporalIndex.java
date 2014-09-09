@@ -1,13 +1,13 @@
 package org.acc.coherence.versioning.temporal;
 
 import com.tangosol.io.Serializer;
-import com.tangosol.io.pof.PofContext;
-import com.tangosol.io.pof.reflect.PofNavigator;
-import com.tangosol.io.pof.reflect.PofValue;
-import com.tangosol.io.pof.reflect.PofValueParser;
 import com.tangosol.net.BackingMapContext;
-import com.tangosol.util.*;
-import com.tangosol.util.extractor.PofExtractor;
+import com.tangosol.util.BinaryEntry;
+import com.tangosol.util.MapIndex;
+import com.tangosol.util.MapTrigger;
+import com.tangosol.util.ValueExtractor;
+import com.tangosol.util.comparator.SafeComparator;
+import org.acc.coherence.versioning.org.acc.coherence.util.InvocableMapHelper;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Comparator;
@@ -21,6 +21,7 @@ public class TemporalIndex implements MapIndex {
     private final TemporalExtractor extractor;
     private final Serializer serialiser;
     private final Map<Object, TimeLine> timeLineIndex;
+    private final Comparator<Object> versionComparator;
 
     /**
      * Create a TemporalIndex - normally used by way of {@link org.acc.coherence.versioning.temporal.TemporalExtractor}
@@ -34,6 +35,7 @@ public class TemporalIndex implements MapIndex {
         this.extractor = extractor;
         this.serialiser = context.getManagerContext().getCacheService().getSerializer();
         this.timeLineIndex = new HashMap<Object, TimeLine>();
+        this.versionComparator = createVersionComparator(extractor.getVersionExtractor(), serialiser);
 
         // Todo(ac): compare performance of SegmentedHashMap and HashMap for reverse indexes
     }
@@ -45,12 +47,12 @@ public class TemporalIndex implements MapIndex {
 
     @Override
     public boolean isPartial() {
-        return false;
+        throw new UnsupportedOperationException("Temporal Indexes can only be used via Temporal Filters");
     }
 
     @Override
     public boolean isOrdered() {
-        return true;
+        throw new UnsupportedOperationException("Temporal Indexes can only be used via Temporal Filters");
     }
 
     @Override
@@ -65,19 +67,18 @@ public class TemporalIndex implements MapIndex {
 
     @Override
     public Comparator getComparator() {
-        return null;
+        throw new UnsupportedOperationException("Temporal Indexes can only be used via Temporal Filters");
     }
 
     @Override
     public void insert(Map.Entry entry) {
         final TimeLine timeLine = getTimeLine(entry, true);
         addToTimeLine(entry, timeLine);
-        // Todo(ac): need to support multiple versions on same time?
     }
 
     @Override
     public void update(Map.Entry entry) {
-        throw new UnsupportedOperationException();  // Todo(ac):
+        throw new UnsupportedOperationException();  // Todo(ac): not really needed if data is immutable...
     }
 
     @Override
@@ -108,7 +109,7 @@ public class TemporalIndex implements MapIndex {
     private TimeLine getTimeLine(Object businessKey, boolean createIfNeeded) {
         TimeLine timeLine = timeLineIndex.get(businessKey);
         if (timeLine == null && createIfNeeded) {
-            timeLine = new TimeLine();
+            timeLine = new TimeLine(versionComparator);
             timeLineIndex.put(businessKey, timeLine);
         }
 
@@ -121,7 +122,7 @@ public class TemporalIndex implements MapIndex {
     }
 
     private void removeFromTimeLine(Map.Entry entry, TimeLine timeLine) {
-        final Object arrived = InvocableMapHelper.extractFromEntry(extractor.getTimestampExtractor(), entry);
+        final Object arrived = InvocableMapHelper.extractOriginalFromEntry(extractor.getTimestampExtractor(), (MapTrigger.Entry) entry);
         if (!timeLine.remove(getCoherenceKey(entry), arrived)) {
             throw new IllegalStateException("Unknown arrived time " + arrived +
                     " for temporal key " + extractBusinessKeyFromEntry(entry) +
@@ -134,17 +135,11 @@ public class TemporalIndex implements MapIndex {
     }
 
     private Object extractBusinessKeyFromEntry(Map.Entry entry) {
-        return InvocableMapHelper.extractFromEntry(extractor.getKeyExtractor(), entry);
+        return InvocableMapHelper.extractFromEntry(extractor.getBusinessKeyExtractor(), entry);
     }
 
     private Object extractBusinessKeyFromKey(Object fullKey) {
-        if (extractor.getKeyExtractor() instanceof PofExtractor) {
-            PofExtractor keyExtractor = (PofExtractor) extractor.getKeyExtractor();
-            PofNavigator navigator = keyExtractor.getNavigator();
-            PofValue pofValue = PofValueParser.parse((Binary) fullKey, (PofContext) serialiser);
-            return navigator.navigate(pofValue).getValue();
-        }
-        return extractor.getKeyExtractor().extract(fullKey);
+        return InvocableMapHelper.extractFromObject(extractor.getBusinessKeyExtractor(), fullKey, serialiser);
     }
 
     private static Object getCoherenceKey(Map.Entry entry) {
@@ -153,5 +148,22 @@ public class TemporalIndex implements MapIndex {
         }
 
         return entry instanceof BinaryEntry ? ((BinaryEntry) entry).getBinaryKey() : entry.getKey();
+    }
+
+    private static Comparator<Object> createVersionComparator(final ValueExtractor versionExtractor, final Serializer serialiser) {
+        if (versionExtractor == null) {
+            return null;    // Natural ordering of full key
+        }
+
+        return new Comparator<Object>() {
+            @Override
+            public int compare(Object o1, Object o2) {
+                return SafeComparator.compareSafe(null, extract(o1), extract(o2));
+            }
+
+            private Comparable extract(Object o) {
+                return (Comparable) InvocableMapHelper.extractFromObject(versionExtractor, o, serialiser);
+            }
+        };
     }
 }

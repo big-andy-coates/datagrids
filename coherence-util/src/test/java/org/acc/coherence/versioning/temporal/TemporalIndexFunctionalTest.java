@@ -6,6 +6,7 @@ import com.tangosol.net.NamedCache;
 import com.tangosol.util.Filter;
 import com.tangosol.util.aggregator.Count;
 import com.tangosol.util.filter.AndFilter;
+import com.tangosol.util.filter.EqualsFilter;
 import com.tangosol.util.filter.IndexAwareFilter;
 import com.tangosol.util.filter.NotEqualsFilter;
 import org.acc.coherence.test.ClusterBasedTest;
@@ -25,7 +26,8 @@ import static org.testng.Assert.fail;
 public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     private static final TemporalExtractor TEMPORAL_EXTRACTOR = new TemporalExtractor(
             VKey.BUSINESS_KEY_POF_EXTRACTOR,
-            VValue.CREATED_POF_EXTRACTED);
+            VValue.CREATED_POF_EXTRACTED,
+            VKey.VERSION_POF_EXTRACTOR);
 
     private NamedCache versioned;
 
@@ -81,8 +83,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     @Test
     public void shouldRemoveIndexFromCacheWithData() throws Exception {
         // Given:
-        givenSomeDataInCache();
-        addTemporalIndex();
+        givenSomeDataInCacheAndIndexExists();
 
         // When:
         removeTemporalIndex();
@@ -94,8 +95,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     @Test
     public void shouldBeAbleToQuerySnapShotEqualsFilter_UpperBoundCheck() throws Exception {
         // Given:
-        addTemporalIndex();
-        givenSomeDataInCache();
+        givenSomeDataInCacheAndIndexExists();
 
         // When:
         Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(TEMPORAL_EXTRACTOR, 5000L));
@@ -111,8 +111,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     @Test
     public void shouldBeAbleToQuerySnapShotEqualsFilter_LowerBoundCheck() throws Exception {
         // Given:
-        givenSomeDataInCache();
-        addTemporalIndex();
+        givenSomeDataInCacheAndIndexExists();
 
         // When:
         Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(TEMPORAL_EXTRACTOR, 999L));
@@ -127,8 +126,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     @Test
     public void shouldBeAbleToQueryWithNotMatches() throws Exception {
         // Given:
-        givenSomeDataInCache();
-        addTemporalIndex();
+        givenSomeDataInCacheAndIndexExists();
 
         // When:
         Set<Integer> results = versioned.keySet(new SnapshotFilter(TEMPORAL_EXTRACTOR, 5L));    // No versions existed at this point
@@ -140,8 +138,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     @Test
     public void shouldWorkInConjunctionWithOtherFilters() throws Exception {
         // Given:
-        addTemporalIndex();
-        givenSomeDataInCache();
+        givenSomeDataInCacheAndIndexExists();
 
         // When:
         Set<VKey<String>> results = versioned.keySet(new AndFilter(
@@ -156,9 +153,52 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         ));
     }
 
-    // Todo(ac): add functionality to retrieve all versions that arrived before a certain date. (May as well reuse same index).
-    // Todo(ac): test it works after partition move.
+    @Test
+    public void shouldReturnHighestVersionWhereTwoVersionsHaveSameTimestamp() throws Exception {
+        // Given:
+        givenSomeDataInCacheAndIndexExists();
+
+        // When:
+        Set<VKey<String>> results = versioned.keySet(new AndFilter(
+                new EqualsFilter(VKey.BUSINESS_KEY_POF_EXTRACTOR, "thirdKey"),
+                new SnapshotFilter(TEMPORAL_EXTRACTOR, 9999L)
+        ));
+
+        // Then:
+        assertThat(results, containsInAnyOrder(
+                new VKey<String>("thirdKey", 4)
+        ));
+    }
+
+    @Test
+    public void shouldSupportEntriesBeingRemoved() throws Exception {
+        // Given:
+        givenSomeDataInCacheAndIndexExists();
+        removeValueFromCache(4, "thirdKey");
+
+        // When:
+        Set<VKey<String>> results = versioned.keySet(new AndFilter(
+                new EqualsFilter(VKey.BUSINESS_KEY_POF_EXTRACTOR, "thirdKey"),
+                new SnapshotFilter(TEMPORAL_EXTRACTOR, 9999L)
+        ));
+
+        // Then:
+        assertThat(results, containsInAnyOrder(
+                new VKey<String>("thirdKey", 3)
+        ));
+    }
+
+    @Test
+    public void shouldBeConsistentAfterPartitionMoves() throws Exception {
+        // Given:
+        givenPartitionsHaveMoved();
+
+        // Then:
+        fail("todo");
+    }
+
     // Todo(ac): test with complex type returned from arrived and with comparator
+
     // todo(ac): test with non-pof serialistion.
 
     private void addTemporalIndex() {
@@ -185,9 +225,15 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         addValueToCache(3, "secondKey", 20000);// 20000 -> ?
         addValueToCache(1, "secondKey", 500); // 500 -> 5000
 
-        addValueToCache(3, "thirdKey", 9999); // 9999 -> ?
+        addValueToCache(3, "thirdKey", 9999); // never live, superseded by v4
         addValueToCache(1, "thirdKey", 999); // 999 -> 5001
         addValueToCache(2, "thirdKey", 5001);// 5001 -> 9999
+        addValueToCache(4, "thirdKey", 9999); // 9999 -> ?
+    }
+
+    private void givenSomeDataInCacheAndIndexExists() {
+        givenSomeDataInCache();
+        addTemporalIndex();
     }
 
     private void addValueToCache(int version, String key, long createdTimestamp) {
@@ -197,10 +243,17 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         versioned.put(new VKey<String>(key, version), value);
     }
 
+    private void removeValueFromCache(int version, String key) {
+        versioned.remove(new VKey<String>(key, version));
+    }
+
     private int numberOfIndexes() {
         IndexCountingFilter filter = new IndexCountingFilter();
         versioned.aggregate(filter, new Count());
         return filter.getResult();
+    }
+
+    private void givenPartitionsHaveMoved() {
     }
 
     @Portable

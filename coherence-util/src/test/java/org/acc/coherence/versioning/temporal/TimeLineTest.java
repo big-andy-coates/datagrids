@@ -8,6 +8,9 @@ import java.util.Comparator;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
+/**
+ * @author Andy Coates.
+ */
 public class TimeLineTest {
     private TimeLine timeLine;
 

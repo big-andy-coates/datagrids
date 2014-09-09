@@ -17,10 +17,13 @@ import java.util.Map;
 @Portable
 public class TemporalExtractor implements IndexAwareExtractor {
     @PortableProperty(value = 1)
-    private ValueExtractor keyExtractor;
+    private ValueExtractor businessKeyExtractor;
 
     @PortableProperty(value = 2)
     private ValueExtractor timestampExtractor;
+
+    @PortableProperty(value = 3)
+    private ValueExtractor versionExtractor;
 
     @SuppressWarnings("UnusedDeclaration")      // Used by Coherence
     @Deprecated                                 // Only
@@ -30,23 +33,32 @@ public class TemporalExtractor implements IndexAwareExtractor {
     // Todo(ac): support multiple versions on same timestamp.
 
     /**
-     * @param keyExtractor       The extractor to extract the business key from the versioned coherence key
-     * @param timestampExtractor The extractor to extract the temporal property of an entry e.g. the created or valid timestamp.
+     * @param businessKeyExtractor The extractor to extract the business key from the full key
+     * @param timestampExtractor   The extractor to extract the temporal property of the entry e.g. the created or valid timestamp.
+     * @param versionExtractor     An optional extractor to extract the version info from a key.  The extractor must return an type that
+     *                             supports the {@link Comparable} interface. If provided the order of versions will defined by the natural order of
+     *                             the returned object. If not provided the order of versions is defined by the natural order of the full key. The
+     *                             'last' version will be returned where clashes occur.
      */
-    public TemporalExtractor(ValueExtractor keyExtractor, ValueExtractor timestampExtractor) {
-        Validate.notNull(keyExtractor);
+    public TemporalExtractor(ValueExtractor businessKeyExtractor, ValueExtractor timestampExtractor, ValueExtractor versionExtractor) {
+        Validate.notNull(businessKeyExtractor);
         Validate.notNull(timestampExtractor);
 
-        this.keyExtractor = keyExtractor;
+        this.businessKeyExtractor = businessKeyExtractor;
         this.timestampExtractor = timestampExtractor;
+        this.versionExtractor = versionExtractor;
     }
 
-    public ValueExtractor getKeyExtractor() {
-        return keyExtractor;
+    public ValueExtractor getBusinessKeyExtractor() {
+        return businessKeyExtractor;
     }
 
     public ValueExtractor getTimestampExtractor() {
         return timestampExtractor;
+    }
+
+    public ValueExtractor getVersionExtractor() {
+        return versionExtractor;
     }
 
     @Override
@@ -79,25 +91,28 @@ public class TemporalExtractor implements IndexAwareExtractor {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        TemporalExtractor that = (TemporalExtractor) o;
+        TemporalExtractor extractor = (TemporalExtractor) o;
 
-        if (timestampExtractor != null ? !timestampExtractor.equals(that.timestampExtractor) : that.timestampExtractor != null) return false;
-        if (keyExtractor != null ? !keyExtractor.equals(that.keyExtractor) : that.keyExtractor != null) return false;
+        if (!businessKeyExtractor.equals(extractor.businessKeyExtractor)) return false;
+        if (!timestampExtractor.equals(extractor.timestampExtractor)) return false;
+        if (versionExtractor != null ? !versionExtractor.equals(extractor.versionExtractor) : extractor.versionExtractor != null) return false;
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = keyExtractor != null ? keyExtractor.hashCode() : 0;
-        result = 31 * result + (timestampExtractor != null ? timestampExtractor.hashCode() : 0);
+        int result = businessKeyExtractor.hashCode();
+        result = 31 * result + timestampExtractor.hashCode();
+        result = 31 * result + (versionExtractor != null ? versionExtractor.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString() {
         return "TemporalExtractor{" +
-                "keyExtractor=" + keyExtractor +
+                "businessKeyExtractor=" + businessKeyExtractor +
                 ", timestampExtractor=" + timestampExtractor +
+                ", versionExtractor=" + versionExtractor +
                 '}';
     }
 }

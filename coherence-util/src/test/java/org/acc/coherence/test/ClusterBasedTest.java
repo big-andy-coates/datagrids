@@ -6,7 +6,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 /**
- * Created by andy on 28/06/2014.
+ * Created by a.coates on 28/06/2014.
  */
 public abstract class ClusterBasedTest {
     private static ClusterMemberGroup memberGroup;
@@ -40,7 +40,6 @@ public abstract class ClusterBasedTest {
         memberGroup = ClusterMemberGroupUtils.newBuilder()
                 .setStorageEnabledCount(2)
                 .setCacheConfiguration(runningConfig.getClusterConfig())
-                        //.setOverrideConfiguration()
                 .buildAndConfigureForStorageDisabledClient();
     }
 
