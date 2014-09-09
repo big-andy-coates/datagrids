@@ -1,6 +1,8 @@
 package org.acc.coherence.versioning.temporal;
 
+import com.tangosol.io.Serializer;
 import com.tangosol.io.pof.PofContext;
+import com.tangosol.io.pof.reflect.PofNavigator;
 import com.tangosol.io.pof.reflect.PofValue;
 import com.tangosol.io.pof.reflect.PofValueParser;
 import com.tangosol.net.BackingMapContext;
@@ -11,32 +13,27 @@ import org.apache.commons.lang3.Validate;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Custom index that builds a per business key time-line of versions.
  */
 public class TemporalIndex implements MapIndex {
     private final TemporalExtractor extractor;
-    private final BackingMapContext context;
-    private final Map<Object, TreeMap<Object, Object>> timeLineIndex;
-    private final Comparator comparator;
+    private final Serializer serialiser;
+    private final Map<Object, TimeLine> timeLineIndex;
 
     /**
      * Create a TemporalIndex - normally used by way of {@link org.acc.coherence.versioning.temporal.TemporalExtractor}
      *
      * @param extractor  The temporal extractor to use to build the index
-     * @param comparator Optional comparator to use for ordering the reverse index
      * @param context    The map context for the cache on which the index is to be built.
      */
-    public TemporalIndex(TemporalExtractor extractor, Comparator comparator, BackingMapContext context) {
+    public TemporalIndex(TemporalExtractor extractor, BackingMapContext context) {
         Validate.notNull(extractor);
-        Validate.notNull(context);
 
         this.extractor = extractor;
-        this.context = context;
-        this.comparator = comparator;
-        this.timeLineIndex = new HashMap<Object, TreeMap<Object, Object>>();
+        this.serialiser = context.getManagerContext().getCacheService().getSerializer();
+        this.timeLineIndex = new HashMap<Object, TimeLine>();
 
         // Todo(ac): compare performance of SegmentedHashMap and HashMap for reverse indexes
     }
@@ -68,12 +65,12 @@ public class TemporalIndex implements MapIndex {
 
     @Override
     public Comparator getComparator() {
-        return comparator;
+        return null;
     }
 
     @Override
     public void insert(Map.Entry entry) {
-        final TreeMap<Object, Object> timeLine = getTimeLine(entry, true);
+        final TimeLine timeLine = getTimeLine(entry, true);
         addToTimeLine(entry, timeLine);
         // Todo(ac): need to support multiple versions on same time?
     }
@@ -85,66 +82,67 @@ public class TemporalIndex implements MapIndex {
 
     @Override
     public void delete(Map.Entry entry) {
-        final TreeMap<Object, Object> timeLine = getTimeLine(entry, true);
+        final TimeLine timeLine = getTimeLine(entry, true);
         if (timeLine == null) {
-            throw new IllegalStateException("Unknown temporal key deleted: " + extractTemporalKeyFromEntry(entry) +
+            throw new IllegalStateException("Unknown temporal key deleted: " + extractBusinessKeyFromEntry(entry) +
                     ". Full coherence key: " + entry.getKey());
         }
 
         removeFromTimeLine(entry, timeLine);
     }
 
-    public TreeMap<Object, Object> getTimeLine(Object fullKey) {
-        final Object temporalKey = extractTemporalKeyFromKey(fullKey);
-        TreeMap<Object, Object> timeLine = getTimeLine(temporalKey, false);
+    public TimeLine getTimeLine(Object fullKey) {
+        final Object businessKey = extractBusinessKeyFromKey(fullKey);
+        TimeLine timeLine = getTimeLine(businessKey, false);
         if (timeLine == null) {
-            throw new IllegalStateException("Unknown temporal key: " + temporalKey + ". Coherence key: " + fullKey);
+            throw new IllegalStateException("Unknown temporal key: " + businessKey + ". Coherence key: " + fullKey);
         }
         return timeLine;
     }
 
-    private TreeMap<Object, Object> getTimeLine(Map.Entry entry, boolean createIfNeeded) {
-        final Object temporalKey = extractTemporalKeyFromEntry(entry);
-        return getTimeLine(temporalKey, createIfNeeded);
+    private TimeLine getTimeLine(Map.Entry entry, boolean createIfNeeded) {
+        final Object businessKey = extractBusinessKeyFromEntry(entry);
+        return getTimeLine(businessKey, createIfNeeded);
     }
 
-    private TreeMap<Object, Object> getTimeLine(Object temporalKey, boolean createIfNeeded) {
-        TreeMap<Object, Object> timeLine = timeLineIndex.get(temporalKey);
+    private TimeLine getTimeLine(Object businessKey, boolean createIfNeeded) {
+        TimeLine timeLine = timeLineIndex.get(businessKey);
         if (timeLine == null && createIfNeeded) {
-            timeLine = new TreeMap<Object, Object>();
-            timeLineIndex.put(temporalKey, timeLine);
+            timeLine = new TimeLine();
+            timeLineIndex.put(businessKey, timeLine);
         }
 
         return timeLine;
     }
 
-    private void addToTimeLine(Map.Entry entry, TreeMap<Object, Object> timeLine) {
-        final Object arrived = InvocableMapHelper.extractFromEntry(extractor.getArrivedExtractor(), entry);
-        timeLine.put(arrived, getCoherenceKey(entry));
+    private void addToTimeLine(Map.Entry entry, TimeLine timeLine) {
+        final Object arrived = InvocableMapHelper.extractFromEntry(extractor.getTimestampExtractor(), entry);
+        timeLine.insert(getCoherenceKey(entry), arrived);
     }
 
-    private void removeFromTimeLine(Map.Entry entry, TreeMap<Object, Object> timeLine) {
-        final Object arrived = InvocableMapHelper.extractFromEntry(extractor.getArrivedExtractor(), entry);
-        if (timeLine.remove(arrived) == null) {
+    private void removeFromTimeLine(Map.Entry entry, TimeLine timeLine) {
+        final Object arrived = InvocableMapHelper.extractFromEntry(extractor.getTimestampExtractor(), entry);
+        if (!timeLine.remove(getCoherenceKey(entry), arrived)) {
             throw new IllegalStateException("Unknown arrived time " + arrived +
-                    " for temporal key " + extractTemporalKeyFromEntry(entry) +
+                    " for temporal key " + extractBusinessKeyFromEntry(entry) +
                     ". Full coherence key: " + entry.getKey());
         }
 
         if (timeLine.isEmpty()) {
-            timeLineIndex.remove(extractTemporalKeyFromEntry(entry));
+            timeLineIndex.remove(extractBusinessKeyFromEntry(entry));
         }
     }
 
-    private Object extractTemporalKeyFromEntry(Map.Entry entry) {
+    private Object extractBusinessKeyFromEntry(Map.Entry entry) {
         return InvocableMapHelper.extractFromEntry(extractor.getKeyExtractor(), entry);
     }
 
-    private Object extractTemporalKeyFromKey(Object fullKey) {
+    private Object extractBusinessKeyFromKey(Object fullKey) {
         if (extractor.getKeyExtractor() instanceof PofExtractor) {
             PofExtractor keyExtractor = (PofExtractor) extractor.getKeyExtractor();
-            PofValue pofValue = PofValueParser.parse((Binary) fullKey, (PofContext) context.getManagerContext().getCacheService().getSerializer());
-            return keyExtractor.getNavigator().navigate(pofValue).getValue();
+            PofNavigator navigator = keyExtractor.getNavigator();
+            PofValue pofValue = PofValueParser.parse((Binary) fullKey, (PofContext) serialiser);
+            return navigator.navigate(pofValue).getValue();
         }
         return extractor.getKeyExtractor().extract(fullKey);
     }

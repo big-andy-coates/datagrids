@@ -5,7 +5,10 @@ import com.tangosol.io.pof.annotation.PortableProperty;
 import com.tangosol.util.Filter;
 import com.tangosol.util.filter.IndexAwareFilter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Andy Coates.
@@ -72,12 +75,12 @@ public class SnapshotFilter implements IndexAwareFilter {
     }
 
     private Object filterEntry(Object fullKey, TemporalIndex index, Set allKeys) {
-        final TreeMap<Object, Object> timeLine = index.getTimeLine(fullKey);
+        final TimeLine timeLine = index.getTimeLine(fullKey);
 
-        final Map.Entry<Object, Object> floor = timeLine.floorEntry(snapshot);
+        final Object floor = timeLine.get(snapshot);
 
-        allKeys.removeAll(timeLine.values());
+        allKeys.removeAll(timeLine.keySet());
 
-        return floor == null ? null : floor.getValue();
+        return floor;
     }
 }

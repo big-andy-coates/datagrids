@@ -12,7 +12,7 @@ import com.tangosol.util.extractor.PofExtractor;
 public class VKey<DomainKey> implements Versioned<DomainKey> {
     public static final int FIRST_VERSION = 1;
     public static final int VERSION_POF_ID = 1;
-    public static final PofExtractor KEY_POF_EXTRACTOR = new PofExtractor(null, new SimplePofPath(DOMAIN_POF_ID), PofExtractor.KEY);
+    public static final PofExtractor BUSINESS_KEY_POF_EXTRACTOR = new PofExtractor(null, new SimplePofPath(DOMAIN_POF_ID), PofExtractor.KEY);
     public static final PofExtractor VERSION_POF_EXTRACTOR = new PofExtractor(int.class, new SimplePofPath(VERSION_POF_ID), PofExtractor.KEY);
 
     @PortableProperty(value = VERSION_POF_ID)

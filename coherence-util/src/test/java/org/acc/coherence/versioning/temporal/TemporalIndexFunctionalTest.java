@@ -24,7 +24,7 @@ import static org.testng.Assert.fail;
 
 public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     private static final TemporalExtractor TEMPORAL_EXTRACTOR = new TemporalExtractor(
-            VKey.KEY_POF_EXTRACTOR,
+            VKey.BUSINESS_KEY_POF_EXTRACTOR,
             VValue.CREATED_POF_EXTRACTED);
 
     private NamedCache versioned;
@@ -145,7 +145,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
 
         // When:
         Set<VKey<String>> results = versioned.keySet(new AndFilter(
-                new NotEqualsFilter(VKey.KEY_POF_EXTRACTOR, "secondKey"),
+                new NotEqualsFilter(VKey.BUSINESS_KEY_POF_EXTRACTOR, "secondKey"),
                 new SnapshotFilter(TEMPORAL_EXTRACTOR, 5500L)
         ));
 

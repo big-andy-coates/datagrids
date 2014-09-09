@@ -20,31 +20,33 @@ public class TemporalExtractor implements IndexAwareExtractor {
     private ValueExtractor keyExtractor;
 
     @PortableProperty(value = 2)
-    private ValueExtractor arrivedExtractor;
+    private ValueExtractor timestampExtractor;
 
     @SuppressWarnings("UnusedDeclaration")      // Used by Coherence
     @Deprecated                                 // Only
     public TemporalExtractor() {
     }
 
+    // Todo(ac): support multiple versions on same timestamp.
+
     /**
-     * @param keyExtractor     The extractor to extract the temporal key from the coherence key
-     * @param arrivedExtractor The extractor to extract the arrived_at temporal property of an entry.
+     * @param keyExtractor       The extractor to extract the business key from the versioned coherence key
+     * @param timestampExtractor The extractor to extract the temporal property of an entry e.g. the created or valid timestamp.
      */
-    public TemporalExtractor(ValueExtractor keyExtractor, ValueExtractor arrivedExtractor) {
+    public TemporalExtractor(ValueExtractor keyExtractor, ValueExtractor timestampExtractor) {
         Validate.notNull(keyExtractor);
-        Validate.notNull(arrivedExtractor);
+        Validate.notNull(timestampExtractor);
 
         this.keyExtractor = keyExtractor;
-        this.arrivedExtractor = arrivedExtractor;
+        this.timestampExtractor = timestampExtractor;
     }
 
     public ValueExtractor getKeyExtractor() {
         return keyExtractor;
     }
 
-    public ValueExtractor getArrivedExtractor() {
-        return arrivedExtractor;
+    public ValueExtractor getTimestampExtractor() {
+        return timestampExtractor;
     }
 
     @Override
@@ -57,7 +59,7 @@ public class TemporalExtractor implements IndexAwareExtractor {
             throw new IllegalArgumentException("Repetitive addIndex call for " + this);
         }
 
-        MapIndex index = new TemporalIndex(this, comparator, context);
+        MapIndex index = new TemporalIndex(this, context);
         mapIndex.put(this, index);
         return index;
     }
@@ -79,7 +81,7 @@ public class TemporalExtractor implements IndexAwareExtractor {
 
         TemporalExtractor that = (TemporalExtractor) o;
 
-        if (arrivedExtractor != null ? !arrivedExtractor.equals(that.arrivedExtractor) : that.arrivedExtractor != null) return false;
+        if (timestampExtractor != null ? !timestampExtractor.equals(that.timestampExtractor) : that.timestampExtractor != null) return false;
         if (keyExtractor != null ? !keyExtractor.equals(that.keyExtractor) : that.keyExtractor != null) return false;
         return true;
     }
@@ -87,7 +89,7 @@ public class TemporalExtractor implements IndexAwareExtractor {
     @Override
     public int hashCode() {
         int result = keyExtractor != null ? keyExtractor.hashCode() : 0;
-        result = 31 * result + (arrivedExtractor != null ? arrivedExtractor.hashCode() : 0);
+        result = 31 * result + (timestampExtractor != null ? timestampExtractor.hashCode() : 0);
         return result;
     }
 
@@ -95,7 +97,7 @@ public class TemporalExtractor implements IndexAwareExtractor {
     public String toString() {
         return "TemporalExtractor{" +
                 "keyExtractor=" + keyExtractor +
-                ", arrivedExtractor=" + arrivedExtractor +
+                ", timestampExtractor=" + timestampExtractor +
                 '}';
     }
 }
