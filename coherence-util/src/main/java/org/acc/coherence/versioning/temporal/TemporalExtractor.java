@@ -8,6 +8,7 @@ import com.tangosol.util.ValueExtractor;
 import com.tangosol.util.extractor.IndexAwareExtractor;
 import org.apache.commons.lang3.Validate;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Map;
 
@@ -15,7 +16,9 @@ import java.util.Map;
  * Created by andy on 28/06/2014.
  */
 @Portable
-public class TemporalExtractor implements IndexAwareExtractor {
+public class TemporalExtractor implements IndexAwareExtractor, Serializable {
+    private static final long serialVersionUID = -3758242532673188689L;
+
     @PortableProperty(value = 1)
     private ValueExtractor businessKeyExtractor;
 
@@ -63,8 +66,6 @@ public class TemporalExtractor implements IndexAwareExtractor {
 
     @Override
     public MapIndex createIndex(boolean ordered, Comparator comparator, Map rawMapIndex, BackingMapContext context) {
-        Validate.isTrue(ordered, "Temporal indexes must be ordered");
-
         //noinspection unchecked,UnnecessaryLocalVariable
         Map<ValueExtractor, MapIndex> mapIndex = rawMapIndex;
         if (mapIndex.containsKey(this)) {

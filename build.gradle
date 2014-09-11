@@ -10,6 +10,7 @@ subprojects {
 	
 	dependencies {
 		compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.3.+'
+		compile 'com.google.guava:guava:18.+'
 		testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: '1.+'
 		testCompile 'org.testng:testng:6.8.+'
 		testCompile 'org.mockito:mockito-all:1.9.+'

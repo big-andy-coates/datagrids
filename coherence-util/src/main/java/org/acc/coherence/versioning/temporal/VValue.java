@@ -1,18 +1,26 @@
 package org.acc.coherence.versioning.temporal;
 
+import com.tangosol.dev.component.Extractor;
 import com.tangosol.io.pof.annotation.Portable;
 import com.tangosol.io.pof.annotation.PortableProperty;
 import com.tangosol.io.pof.reflect.SimplePofPath;
+import com.tangosol.util.ValueExtractor;
 import com.tangosol.util.extractor.PofExtractor;
+import com.tangosol.util.extractor.ReflectionExtractor;
+
+import java.io.Serializable;
 
 /**
- * Wrapper type for versioned values.
+ * Wrapper type for versioned values. Note, for testing this supports both Pof and Java serialisation.
  */
 @Portable
-public class VValue<DomainValue> implements Versioned<DomainValue> {
+public class VValue<DomainValue> implements Versioned<DomainValue>, Serializable {
+    private static final long serialVersionUID = 7597546340408031504L;
+
     public static final int METADATA_POF_ID = 1;
     public static final PofExtractor VERSION_POF_EXTRACTOR = new PofExtractor(int.class, new SimplePofPath(new int[]{METADATA_POF_ID, MetaData.VERSION_POF_ID}));
     public static final PofExtractor CREATED_POF_EXTRACTED = new PofExtractor(long.class, new SimplePofPath(new int[]{METADATA_POF_ID, MetaData.CREATED_POF_ID}));
+    public static final ValueExtractor CREATED_JAVA_EXTRACTED = new ReflectionExtractor("getCreated");
 
     @PortableProperty(value = METADATA_POF_ID)
     private MetaData metaData = new MetaData();
@@ -74,7 +82,9 @@ public class VValue<DomainValue> implements Versioned<DomainValue> {
     }
 
     @Portable
-    public static class MetaData { // Todo(ac): make more generic
+    public static class MetaData implements Serializable { // Todo(ac): make more generic
+        private static final long serialVersionUID = -1668679611641295582L;
+
         public final static int VERSION_POF_ID = 1;
         public final static int CREATED_POF_ID = 2;
         private static final int NOT_SET = -1;
@@ -122,7 +132,7 @@ public class VValue<DomainValue> implements Versioned<DomainValue> {
 
         @Override
         public String toString() {
-            return "MetaData{version=" + version + ", created=" + created + '}';
+            return "MetaData{v" + version + ", created=" + created + '}';
         }
     }
 }

@@ -18,14 +18,14 @@ public class TimeLine {
         this.comparator = comparator;
     }
 
-    public void insert(Object entry, Object timestamp) {
-        if (allKeys.contains(entry)) {
-            throw new UnsupportedOperationException("Duplicate entry detected: " + entry);
+    public void insert(Object key, Object timestamp) {
+        if (allKeys.contains(key)) {
+            throw new UnsupportedOperationException("Duplicate key detected: " + key);
         }
 
         Set<Object> entries = getEntrySet(timestamp, true);
-        entries.add(entry);
-        allKeys.add(entry);
+        entries.add(key);
+        allKeys.add(key);
     }
 
     public boolean remove(Object key, Object timestamp) {

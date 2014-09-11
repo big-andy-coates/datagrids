@@ -14,7 +14,7 @@ public class VersioningFunctionalTest extends ClusterBasedTest {
         super("org/acc/coherence/versioning/simple/simple-versioning-coherence-cache-config.xml");
     }
 
-    @Test
+    @Test(enabled = false)
     public void shouldDoSomething() {
         NamedCache cache = CacheFactory.getCache("dist-latest");
         assertThat(cache, is(notNullValue()));

@@ -5,6 +5,7 @@ import com.tangosol.net.CacheFactory;
 import com.tangosol.net.NamedCache;
 import com.tangosol.util.Filter;
 import com.tangosol.util.aggregator.Count;
+import com.tangosol.util.extractor.ReflectionExtractor;
 import com.tangosol.util.filter.AndFilter;
 import com.tangosol.util.filter.EqualsFilter;
 import com.tangosol.util.filter.IndexAwareFilter;
@@ -14,21 +15,19 @@ import org.acc.coherence.test.EnsureCacheInvocable;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
 import static org.testng.Assert.fail;
 
 public class TemporalIndexFunctionalTest extends ClusterBasedTest {
-    private static final TemporalExtractor TEMPORAL_EXTRACTOR = new TemporalExtractor(
-            VKey.BUSINESS_KEY_POF_EXTRACTOR,
-            VValue.CREATED_POF_EXTRACTED,
-            VKey.VERSION_POF_EXTRACTOR);
-
+    private TemporalExtractor temporalExtactor;
     private NamedCache versioned;
 
     public TemporalIndexFunctionalTest() {
@@ -37,7 +36,8 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
 
     @BeforeMethod
     public void setUp() {
-        versioned = reinitialiseCache("versioned-test");
+        givenWorkingWithPofCache();
+
         reinitialiseCache("repl-results");
         EnsureCacheInvocable.ensureCache("repl-results", "InvocationService");
     }
@@ -55,17 +55,6 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
 
         // When:
         removeTemporalIndex();
-    }
-
-    @Test
-    public void shouldThrowIfNotOrderedIndex() throws Exception {
-        try {
-            versioned.addIndex(TEMPORAL_EXTRACTOR, false, null);
-            fail("Exception expected");
-        } catch (Exception e) {
-            //assertThat(e.getOriginalException(), instanceOf(IllegalArgumentException.class));
-            System.out.println("Exception caught!" + e);
-        }
     }
 
     @Test
@@ -98,7 +87,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         givenSomeDataInCacheAndIndexExists();
 
         // When:
-        Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(TEMPORAL_EXTRACTOR, 5000L));
+        Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(temporalExtactor, 5000L));
 
         // Then:
         assertThat(results, containsInAnyOrder(
@@ -114,7 +103,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         givenSomeDataInCacheAndIndexExists();
 
         // When:
-        Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(TEMPORAL_EXTRACTOR, 999L));
+        Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(temporalExtactor, 999L));
 
         // Then:
         assertThat(results, containsInAnyOrder(
@@ -129,7 +118,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         givenSomeDataInCacheAndIndexExists();
 
         // When:
-        Set<Integer> results = versioned.keySet(new SnapshotFilter(TEMPORAL_EXTRACTOR, 5L));    // No versions existed at this point
+        Set<Integer> results = versioned.keySet(new SnapshotFilter(temporalExtactor, 5L));    // No versions existed at this point
 
         // Then:
         assertThat(results, is(empty()));
@@ -143,7 +132,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         // When:
         Set<VKey<String>> results = versioned.keySet(new AndFilter(
                 new NotEqualsFilter(VKey.BUSINESS_KEY_POF_EXTRACTOR, "secondKey"),
-                new SnapshotFilter(TEMPORAL_EXTRACTOR, 5500L)
+                new SnapshotFilter(temporalExtactor, 5500L)
         ));
 
         // Then:
@@ -161,7 +150,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         // When:
         Set<VKey<String>> results = versioned.keySet(new AndFilter(
                 new EqualsFilter(VKey.BUSINESS_KEY_POF_EXTRACTOR, "thirdKey"),
-                new SnapshotFilter(TEMPORAL_EXTRACTOR, 9999L)
+                new SnapshotFilter(temporalExtactor, 9999L)
         ));
 
         // Then:
@@ -179,7 +168,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         // When:
         Set<VKey<String>> results = versioned.keySet(new AndFilter(
                 new EqualsFilter(VKey.BUSINESS_KEY_POF_EXTRACTOR, "thirdKey"),
-                new SnapshotFilter(TEMPORAL_EXTRACTOR, 9999L)
+                new SnapshotFilter(temporalExtactor, 9999L)
         ));
 
         // Then:
@@ -191,22 +180,109 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     @Test
     public void shouldBeConsistentAfterPartitionMoves() throws Exception {
         // Given:
-        givenPartitionsHaveMoved();
+        givenSomeDataInCacheAndIndexExists();
+        givenAllPartitionsHaveMoved();
+
+        // When:
+        Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(temporalExtactor, 5000L));
 
         // Then:
-        fail("todo");
+        assertThat(results, containsInAnyOrder(
+                new VKey<String>("firstKey", 2),
+                new VKey<String>("secondKey", 2),
+                new VKey<String>("thirdKey", 1)
+        ));
+    }
+
+    @Test
+    public void shouldWorkWithNonPofExtractors() throws Exception {
+        // Given:
+        givenWorkingWithNonPofExtractor();
+        givenSomeDataInCacheAndIndexExists();
+
+        // When:
+        Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(temporalExtactor, 5000L));
+
+        // Then:
+        assertThat(results, containsInAnyOrder(
+                new VKey<String>("firstKey", 2),
+                new VKey<String>("secondKey", 2),
+                new VKey<String>("thirdKey", 1)
+        ));
+    }
+
+    @Test
+    public void shouldWorkWithNonPofCachesToo() throws Exception {
+        // Given:
+        givenWorkingWithNonPofCache();
+        givenSomeDataInCacheAndIndexExists();
+
+        // When:
+        Set<VKey<String>> results = versioned.keySet(new SnapshotFilter(temporalExtactor, 5000L));
+
+        // Then:
+        assertThat(results, containsInAnyOrder(
+                new VKey<String>("firstKey", 2),
+                new VKey<String>("secondKey", 2),
+                new VKey<String>("thirdKey", 1)
+        ));
+    }
+
+    @Test
+    public void shouldSupportEntriesBeingRemovedForNonPof() throws Exception {
+        // Given:
+        givenWorkingWithNonPofCache();
+        givenSomeDataInCacheAndIndexExists();
+        removeValueFromCache(4, "thirdKey");
+
+        // When:
+        Set<VKey<String>> results = versioned.keySet(new AndFilter(
+                new EqualsFilter(VKey.BUSINESS_KEY_JAVA_EXTRACTOR, "thirdKey"),
+                new SnapshotFilter(temporalExtactor, 9999L)
+        ));
+
+        // Then:
+        assertThat(results, containsInAnyOrder(
+                new VKey<String>("thirdKey", 3)
+        ));
     }
 
     // Todo(ac): test with complex type returned from arrived and with comparator
+    // Todo(ac): shouold work with no-pof extractors on pof cache
 
-    // todo(ac): test with non-pof serialistion.
+
+    private void givenWorkingWithPofCache() {
+        versioned = reinitialiseCache("pof-versioned-test");
+
+        givenWorkingWithPofExtractor();
+    }
+
+    private void givenWorkingWithNonPofCache() {
+        versioned = reinitialiseCache("non-pof-versioned-test");
+
+        givenWorkingWithNonPofExtractor();
+    }
+
+    private void givenWorkingWithPofExtractor() {
+        temporalExtactor = new TemporalExtractor(
+                VKey.BUSINESS_KEY_POF_EXTRACTOR,
+                VValue.CREATED_POF_EXTRACTED,
+                VKey.VERSION_POF_EXTRACTOR);
+    }
+
+    private void givenWorkingWithNonPofExtractor() {
+        temporalExtactor = new TemporalExtractor(
+                VKey.BUSINESS_KEY_JAVA_EXTRACTOR,
+                VValue.CREATED_JAVA_EXTRACTED,
+                VKey.VERSION_JAVA_EXTRACTOR);
+    }
 
     private void addTemporalIndex() {
-        versioned.addIndex(TEMPORAL_EXTRACTOR, true, null);
+        versioned.addIndex(temporalExtactor, true, null);
     }
 
     private void removeTemporalIndex() {
-        versioned.removeIndex(TEMPORAL_EXTRACTOR);
+        versioned.removeIndex(temporalExtactor);
     }
 
     private NamedCache reinitialiseCache(String name) {
@@ -253,11 +329,10 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         return filter.getResult();
     }
 
-    private void givenPartitionsHaveMoved() {
-    }
-
     @Portable
-    public static class IndexCountingFilter implements IndexAwareFilter {
+    public static class IndexCountingFilter implements IndexAwareFilter, Serializable {
+        private static final long serialVersionUID = -6402916022525816073L;
+
         @Override
         public int calculateEffectiveness(Map indexMap, Set set) {
             CacheFactory.getCache("repl-results").put("result", indexMap.size());

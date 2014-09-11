@@ -6,6 +6,7 @@ import com.tangosol.io.pof.reflect.PofNavigator;
 import com.tangosol.io.pof.reflect.PofValue;
 import com.tangosol.io.pof.reflect.PofValueParser;
 import com.tangosol.util.Binary;
+import com.tangosol.util.ExternalizableHelper;
 import com.tangosol.util.ValueExtractor;
 import com.tangosol.util.extractor.PofExtractor;
 
@@ -21,6 +22,12 @@ public class InvocableMapHelper extends com.tangosol.util.InvocableMapHelper {
             PofValue pofValue = PofValueParser.parse((Binary) object, (PofContext) serialiser);
             return navigator.navigate(pofValue).getValue();
         }
+
+        if (object instanceof Binary) {
+            Object deserialised = ExternalizableHelper.fromBinary((Binary)object, serialiser);
+            return extractor.extract(deserialised);
+        }
+
         return extractor.extract(object);
     }
 }

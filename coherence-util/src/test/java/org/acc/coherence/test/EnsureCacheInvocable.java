@@ -6,11 +6,14 @@ import com.tangosol.net.AbstractInvocable;
 import com.tangosol.net.CacheFactory;
 import com.tangosol.net.InvocationService;
 
+import java.io.Serializable;
+
 /**
  * Ensure a cache is available on each node - useful for ensure replicated caches have been instantiated on all nodes.
  */
 @Portable
-public class EnsureCacheInvocable extends AbstractInvocable {
+public class EnsureCacheInvocable extends AbstractInvocable implements Serializable {
+    private static final long serialVersionUID = -3234147557166220459L;
 
     public static void ensureCache(String cacheName, String invocationService) {
         InvocationService service = (InvocationService) CacheFactory.getService(invocationService);

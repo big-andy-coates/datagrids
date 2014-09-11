@@ -3,11 +3,15 @@ package org.acc.coherence.versioning.simple;
 import com.tangosol.io.pof.annotation.Portable;
 import com.tangosol.io.pof.annotation.PortableProperty;
 
+import java.io.Serializable;
+
 /**
- * Wrapper type for versioned keys
+ * Wrapper type for versioned keys. Note, for testing this supports both Pof and Java serialisation.
  */
 @Portable
-public class VKey<DomainKey> implements Versioned<DomainKey> {
+public class VKey<DomainKey> implements Versioned<DomainKey>, Serializable {
+    private static final long serialVersionUID = 2135400483405530953L;
+
     @PortableProperty(value = VERSION_POF_ID)
     private int version;
 

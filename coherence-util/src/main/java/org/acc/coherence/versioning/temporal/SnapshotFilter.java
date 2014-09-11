@@ -4,17 +4,18 @@ import com.tangosol.io.pof.annotation.Portable;
 import com.tangosol.io.pof.annotation.PortableProperty;
 import com.tangosol.util.Filter;
 import com.tangosol.util.filter.IndexAwareFilter;
+import org.apache.commons.lang3.Validate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.*;
 
 /**
  * @author Andy Coates.
  */
 @Portable
-public class SnapshotFilter implements IndexAwareFilter {
+public class SnapshotFilter implements IndexAwareFilter, Serializable {
+    private static final long serialVersionUID = -8801572239569206378L;
+
     @PortableProperty(value = 1)
     private TemporalExtractor extractor;
 
@@ -27,13 +28,15 @@ public class SnapshotFilter implements IndexAwareFilter {
     }
 
     public SnapshotFilter(TemporalExtractor extractor, Object snapshot) {
+        Validate.notNull(extractor, "extractor can not be null");
+        Validate.notNull(snapshot, "snapshot can not be null");
+
         this.extractor = extractor;
         this.snapshot = snapshot;
     }
 
     @Override
     public int calculateEffectiveness(Map indexMap, Set keys) {
-        getIndex(indexMap);
         return 1;   // todo(ac): Hard to say without doing all the work
         // - would need to track average timeLine length and then return keys.size() / average
     }
@@ -43,8 +46,9 @@ public class SnapshotFilter implements IndexAwareFilter {
         TemporalIndex index = getIndex(indexMap);
 
         List<Object> matches = new ArrayList<Object>();
-        for (Object key : keys) {
-            Object match = filterEntry(key, index, keys);
+        Iterator it = keys.iterator();
+        while (it.hasNext()) {
+            Object match = filterEntry(it.next(), index, keys);
             if (match != null) {
                 matches.add(match);
             }
