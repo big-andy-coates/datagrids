@@ -26,8 +26,8 @@ public class TemporalIndex implements MapIndex {
     /**
      * Create a TemporalIndex - normally used by way of {@link org.acc.coherence.versioning.temporal.TemporalExtractor}
      *
-     * @param extractor  The temporal extractor to use to build the index
-     * @param context    The map context for the cache on which the index is to be built.
+     * @param extractor The temporal extractor to use to build the index
+     * @param context   The map context for the cache on which the index is to be built.
      */
     public TemporalIndex(TemporalExtractor extractor, BackingMapContext context) {
         Validate.notNull(extractor);
@@ -83,7 +83,7 @@ public class TemporalIndex implements MapIndex {
 
     @Override
     public void delete(Map.Entry entry) {
-        final TimeLine timeLine = getTimeLine(entry, true);
+        final TimeLine timeLine = getTimeLine(entry, false);
         if (timeLine == null) {
             throw new IllegalStateException("Unknown temporal key deleted: " + extractBusinessKeyFromEntry(entry) +
                     ". Full coherence key: " + entry.getKey());
@@ -118,11 +118,15 @@ public class TemporalIndex implements MapIndex {
 
     private void addToTimeLine(Map.Entry entry, TimeLine timeLine) {
         final Object arrived = InvocableMapHelper.extractFromEntry(extractor.getTimestampExtractor(), entry);
+        if (arrived == null) {
+            throw new IllegalArgumentException("Failed to extract timestamp from supplied entry: " + entry +
+                    ", extractor: " + extractor.getTimestampExtractor());
+        }
         timeLine.insert(getCoherenceKey(entry), arrived);
     }
 
     private void removeFromTimeLine(Map.Entry entry, TimeLine timeLine) {
-        final Object arrived = InvocableMapHelper.extractOriginalFromEntry(extractor.getTimestampExtractor(), (MapTrigger.Entry) entry);
+        final Object arrived = extractTimestampFromOriginalValue(entry);
         if (!timeLine.remove(getCoherenceKey(entry), arrived)) {
             throw new IllegalStateException("Unknown arrived time " + arrived +
                     " for temporal key " + extractBusinessKeyFromEntry(entry) +
@@ -135,18 +139,33 @@ public class TemporalIndex implements MapIndex {
     }
 
     private Object extractBusinessKeyFromEntry(Map.Entry entry) {
-        return InvocableMapHelper.extractFromEntry(extractor.getBusinessKeyExtractor(), entry);
+        Object businessKey = InvocableMapHelper.extractFromEntry(extractor.getBusinessKeyExtractor(), entry);
+        if (businessKey == null) {
+            throw new IllegalArgumentException("Failed to extract the business key from the supplied entry: " + entry +
+                    ", extractor: " + extractor.getBusinessKeyExtractor());
+        }
+        return businessKey;
     }
 
     private Object extractBusinessKeyFromKey(Object fullKey) {
-        return InvocableMapHelper.extractFromObject(extractor.getBusinessKeyExtractor(), fullKey, serialiser);
+        Object businessKey = InvocableMapHelper.extractFromObject(extractor.getBusinessKeyExtractor(), fullKey, serialiser);
+        if (businessKey == null) {
+            throw new IllegalArgumentException("Failed to extract the business key from the supplied key: " + fullKey +
+                    ", extractor: " + extractor.getBusinessKeyExtractor());
+        }
+        return businessKey;
+    }
+
+    private Object extractTimestampFromOriginalValue(Map.Entry entry) {
+        Object timestamp = InvocableMapHelper.extractOriginalFromEntry(extractor.getTimestampExtractor(), (MapTrigger.Entry) entry);
+        if (timestamp == null) {
+            throw new IllegalArgumentException("Failed to extract the original timestamp from the supplied entry: " + entry +
+                    ", extractor: " + extractor.getTimestampExtractor());
+        }
+        return timestamp;
     }
 
     private static Object getCoherenceKey(Map.Entry entry) {
-        if (entry == null) {
-            return null;
-        }
-
         return entry instanceof BinaryEntry ? ((BinaryEntry) entry).getBinaryKey() : entry.getKey();
     }
 
@@ -162,7 +181,16 @@ public class TemporalIndex implements MapIndex {
             }
 
             private Comparable extract(Object o) {
-                return (Comparable) InvocableMapHelper.extractFromObject(versionExtractor, o, serialiser);
+                Object version = InvocableMapHelper.extractFromObject(versionExtractor, o, serialiser);
+                if (version == null) {
+                    throw new IllegalArgumentException("Failed to extract the version from the supplied object: " + o +
+                            ", extractor: " + versionExtractor);
+                }
+                if (version instanceof Comparable) {
+                    return (Comparable) version;
+                }
+
+                throw new IllegalArgumentException("Versions must be comparable: " + version + ", extractor: " + versionExtractor);
             }
         };
     }
