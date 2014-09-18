@@ -5,7 +5,6 @@ import com.tangosol.net.CacheFactory;
 import com.tangosol.net.NamedCache;
 import com.tangosol.util.Filter;
 import com.tangosol.util.aggregator.Count;
-import com.tangosol.util.extractor.ReflectionExtractor;
 import com.tangosol.util.filter.AndFilter;
 import com.tangosol.util.filter.EqualsFilter;
 import com.tangosol.util.filter.IndexAwareFilter;
@@ -21,10 +20,8 @@ import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
-import static org.testng.Assert.fail;
 
 public class TemporalIndexFunctionalTest extends ClusterBasedTest {
     private TemporalExtractor temporalExtactor;
@@ -121,7 +118,7 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         Set<Integer> results = versioned.keySet(new SnapshotFilter(temporalExtactor, 5L));    // No versions existed at this point
 
         // Then:
-        assertThat(results, is(empty()));
+        assertThat(results, empty());
     }
 
     @Test

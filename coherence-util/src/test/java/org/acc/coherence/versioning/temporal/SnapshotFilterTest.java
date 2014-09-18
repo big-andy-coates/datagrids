@@ -2,17 +2,15 @@ package org.acc.coherence.versioning.temporal;
 
 import com.google.common.collect.ImmutableMap;
 import com.oracle.common.collections.SubSet;
-import com.oracle.common.collections.WrapperCollections;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.*;
 
@@ -106,9 +104,7 @@ public class SnapshotFilterTest {
 
     private static Set<Object> setWith(Object... values) {
         Set<Object> set = new HashSet<Object>();
-        for (Object v : values) {
-            set.add(v);
-        }
+        Collections.addAll(set, values);
         return new SubSet<Object>(set);
     }
 

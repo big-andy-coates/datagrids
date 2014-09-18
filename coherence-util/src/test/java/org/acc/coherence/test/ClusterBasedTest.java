@@ -5,6 +5,7 @@ import org.littlegrid.ClusterMemberGroup;
 import org.littlegrid.ClusterMemberGroupUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
 
 import java.util.ArrayList;
@@ -20,17 +21,19 @@ public abstract class ClusterBasedTest {
     private static Config runningConfig = new Config("coherence-cache-config.xml");
     private static final List<Integer> storageMemberIds = new ArrayList<Integer>();
 
+    private final Config requiredConfig;
+
     protected ClusterBasedTest(String clusterConfig) {
-        setConfig(new Config(clusterConfig));
+        this.requiredConfig = new Config(clusterConfig);
     }
 
     @BeforeClass
-    public static void beforeTests() {
-        ensureCluster();
+    public void beforeTests() {
+        ensureCluster(requiredConfig);
     }
 
-    @AfterClass
-    public static void afterTests() {
+    @AfterSuite
+    public static void afterAllTests() {
         shutdownCluster();
     }
 
@@ -81,13 +84,13 @@ public abstract class ClusterBasedTest {
         }
     }
 
-    private void setConfig(Config newConfig) {
-        if (newConfig.equals(runningConfig)) {
-            return;
+    private static void ensureCluster(Config newConfig) {
+        if (!newConfig.equals(runningConfig)) {
+            shutdownCluster();
+            runningConfig = newConfig;
         }
 
-        shutdownCluster();
-        runningConfig = newConfig;
+        ensureCluster();
     }
 
     private static void ensureCluster() {

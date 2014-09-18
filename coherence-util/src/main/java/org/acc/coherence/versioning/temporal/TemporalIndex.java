@@ -7,7 +7,7 @@ import com.tangosol.util.MapIndex;
 import com.tangosol.util.MapTrigger;
 import com.tangosol.util.ValueExtractor;
 import com.tangosol.util.comparator.SafeComparator;
-import org.acc.coherence.versioning.org.acc.coherence.util.InvocableMapHelper;
+import org.acc.coherence.versioning.util.InvocableMapHelper;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Comparator;
