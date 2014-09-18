@@ -1,6 +1,9 @@
+allprojects {
+    apply plugin: 'idea'
+}
+
 subprojects {
 	apply plugin: 'java'
-	apply plugin: 'idea'
 
     sourceCompatibility = JavaVersion.VERSION_1_8
 
@@ -16,7 +19,8 @@ subprojects {
 		testCompile 'org.mockito:mockito-all:1.9.+'
     }
 
-	version = '1.0'
+	group = 'org.datalorax.datagrids'
+    version = '1.0'
 
     test {
         useTestNG()
