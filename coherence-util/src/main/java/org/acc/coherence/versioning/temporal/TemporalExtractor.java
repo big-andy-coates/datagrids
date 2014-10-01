@@ -33,8 +33,6 @@ public class TemporalExtractor implements IndexAwareExtractor, Serializable {
     public TemporalExtractor() {
     }
 
-    // Todo(ac): support multiple versions on same timestamp.
-
     /**
      * @param businessKeyExtractor The extractor to extract the business key from the full key
      * @param timestampExtractor   The extractor to extract the temporal property of the entry e.g. the created or valid timestamp.

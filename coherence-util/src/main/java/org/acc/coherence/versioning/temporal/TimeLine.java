@@ -6,9 +6,9 @@ import java.util.*;
  * @author Andy Coates.
  */
 public class TimeLine {
-    private Set<Object> allKeys = new HashSet<Object>();
-    private TreeMap<Object, TreeSet<Object>> timeLine = new TreeMap<Object, TreeSet<Object>>();
-    private Comparator comparator;
+    private final Set<Object> allKeys = new HashSet<Object>();
+    private final TreeMap<Object, TreeSet<Object>> timeLine = new TreeMap<Object, TreeSet<Object>>();
+    private final Comparator comparator;
 
     public TimeLine() {
         this(null);
@@ -23,18 +23,14 @@ public class TimeLine {
             throw new UnsupportedOperationException("Duplicate key detected: " + key);
         }
 
-        Set<Object> entries = getEntrySet(timestamp, true);
+        Set<Object> entries = getEntriesAtTimestamp(timestamp, true);
         entries.add(key);
         allKeys.add(key);
     }
 
     public boolean remove(Object key, Object timestamp) {
-        Set<Object> keys = getEntrySet(timestamp, false);
-        if (keys == null) {
-            return false;
-        }
-
-        if (!keys.remove(key)) {
+        Set<Object> keys = getEntriesAtTimestamp(timestamp, false);
+        if (keys == null || !keys.remove(key)) {
             return false;
         }
 
@@ -59,7 +55,7 @@ public class TimeLine {
         return allKeys;
     }
 
-    private Set<Object> getEntrySet(Object timestamp, boolean createIfNecessary) {
+    private Set<Object> getEntriesAtTimestamp(Object timestamp, boolean createIfNecessary) {
         TreeSet<Object> keys = timeLine.get(timestamp);
         if (keys == null && createIfNecessary) {
             keys = new TreeSet<Object>(comparator);
