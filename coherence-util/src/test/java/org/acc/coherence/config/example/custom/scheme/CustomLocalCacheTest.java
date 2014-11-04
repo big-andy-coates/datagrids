@@ -4,8 +4,6 @@ import com.tangosol.net.ExtensibleConfigurableCacheFactory;
 import com.tangosol.net.NamedCache;
 import com.tangosol.run.xml.XmlElement;
 import com.tangosol.run.xml.XmlHelper;
-import org.acc.coherence.versioning.simple.VKey;
-import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -32,7 +30,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldCreateCustomLocalCache() throws Exception {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -56,7 +54,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldCreateDistributedCacheUsingCustomLocalCache() throws Exception {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -83,7 +81,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldInjectStandardCacheName() {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -109,7 +107,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldInjectStandardHighUnits() {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -136,7 +134,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldInjectStandardExpiryDelay() {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -163,7 +161,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldInjectCustomMacroParam() {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -189,7 +187,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldInjectCustomStringParam() throws Exception {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -219,7 +217,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldInjectCustomLongParam() throws Exception {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -245,7 +243,7 @@ public class CustomLocalCacheTest {
     @Test
     public void shouldInjectFromResourceRegistry() throws Exception {
         // Given:
-        ccf = initialiseCacheFactor(
+        ccf = initialiseCacheFactory(
                 "    <caching-scheme-mapping>\n" +
                         "        <cache-mapping>\n" +
                         "            <cache-name>test-cache</cache-name>\n" +
@@ -269,7 +267,7 @@ public class CustomLocalCacheTest {
         assertThat(backingMap.getExampleInjectedResource(), is(notNullValue()));
     }
 
-    private static ExtensibleConfigurableCacheFactory initialiseCacheFactor(String configSnippet) {
+    private static ExtensibleConfigurableCacheFactory initialiseCacheFactory(String configSnippet) {
         final String preFix = "<?xml version=\"1.0\"?>\n" +
                 "<cache-config xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                 "              xmlns=\"http://xmlns.oracle.com/coherence/coherence-cache-config\"\n" +
@@ -279,7 +277,9 @@ public class CustomLocalCacheTest {
 
         final XmlElement xmlConfig = XmlHelper.loadXml(preFix + configSnippet + postFix);
 
-        return new ExtensibleConfigurableCacheFactory(ExtensibleConfigurableCacheFactory.DependenciesHelper.newInstance(xmlConfig));
+        ExtensibleConfigurableCacheFactory cacheFactory = new ExtensibleConfigurableCacheFactory(ExtensibleConfigurableCacheFactory.DependenciesHelper.newInstance(xmlConfig));
+        cacheFactory.setScopeName("CustomLocalCacheTest");
+        return cacheFactory;
     }
 
     private static Map getBackingMap(NamedCache cache) {

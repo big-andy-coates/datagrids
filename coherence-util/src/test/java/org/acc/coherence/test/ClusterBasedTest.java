@@ -1,6 +1,7 @@
 package org.acc.coherence.test;
 
 import com.google.common.primitives.Ints;
+import com.tangosol.net.CacheFactory;
 import org.littlegrid.ClusterMemberGroup;
 import org.littlegrid.ClusterMemberGroupUtils;
 import org.testng.annotations.AfterClass;
@@ -8,8 +9,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by a.coates on 28/06/2014.
@@ -20,6 +20,7 @@ public abstract class ClusterBasedTest {
     private static ClusterMemberGroup memberGroup;
     private static Config runningConfig = new Config("coherence-cache-config.xml");
     private static final List<Integer> storageMemberIds = new ArrayList<Integer>();
+    private static Map<Object, Object> additionalProperties = new HashMap<Object, Object>();
 
     private final Config requiredConfig;
 
@@ -27,14 +28,15 @@ public abstract class ClusterBasedTest {
         this.requiredConfig = new Config(clusterConfig);
     }
 
-    @BeforeClass
-    public void beforeTests() {
-        ensureCluster(requiredConfig);
-    }
-
     @AfterSuite
     public static void afterAllTests() {
         shutdownCluster();
+    }
+
+    @BeforeClass
+    public void beforeTests() {
+        ensureCluster(requiredConfig);
+        restorePropertyChanges();
     }
 
     @AfterMethod
@@ -98,13 +100,40 @@ public abstract class ClusterBasedTest {
             return;
         }
 
+        final Properties preProps = snapshotProperties();
+
         memberGroup = ClusterMemberGroupUtils.newBuilder()
                 .setStorageEnabledCount(0)
                 .setCacheConfiguration(runningConfig.getClusterConfig())
-                .setFastStartJoinTimeoutMilliseconds(1000)
+                .setFastStartJoinTimeoutMilliseconds(100)
                 .buildAndConfigureForStorageDisabledClient();
 
+        storePropertyChanges(preProps);
+
         addAdditionalStorageMembers(DEFAULT_STORAGE_NODE_COUNT);
+    }
+
+    private static Properties snapshotProperties() {
+        Properties snapshot = new Properties();
+        snapshot.putAll(System.getProperties());
+        return snapshot;
+    }
+
+    private static void storePropertyChanges(Properties preProps) {
+        for (Map.Entry<Object, Object> currentProperty : System.getProperties().entrySet()) {
+            final Object previousValue = preProps.get(currentProperty.getKey());
+            if (previousValue != null && previousValue.equals(currentProperty.getValue())) {
+                continue;
+            }
+
+            additionalProperties.put(currentProperty.getKey(), currentProperty.getValue());
+        }
+    }
+
+    private static void restorePropertyChanges() {
+        for (Map.Entry<Object, Object> property : additionalProperties.entrySet()) {
+            System.getProperties().put(property.getKey(), property.getValue());
+        }
     }
 
     private static void shutdownCluster() {
@@ -112,8 +141,12 @@ public abstract class ClusterBasedTest {
             return;
         }
 
-        ClusterMemberGroupUtils.shutdownCacheFactoryThenClusterMemberGroups(memberGroup);
+        if (ClusterMemberGroupUtils.shutdownCacheFactoryThenClusterMemberGroups(memberGroup)) {
+            CacheFactory.shutdown();
+        }
         memberGroup = null;
+        storageMemberIds.clear();
+        additionalProperties.clear();
     }
 
     private static class Config {

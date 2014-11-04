@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!-- Note: To add custom types, create a new 'pof-config.xml' file
+     containing your custom user-type elements, and place it at the
+     beginning of the class path. -->
+
+<pof-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns="http://xmlns.oracle.com/coherence/coherence-pof-config"
+            xsi:schemaLocation="http://xmlns.oracle.com/coherence/coherence-pof-config coherence-pof-config.xsd">
+    <user-type-list>
+        <include>pof-config.xml</include>
+
+        <user-type>
+            <type-id>40000</type-id>
+            <class-name>org.acc.coherence.index.IndexContentExtractor</class-name>
+        </user-type>
+
+        <user-type>
+            <type-id>40001</type-id>
+            <class-name>org.acc.coherence.index.IndexContentExtractorFunctionalTest$TestType</class-name>
+        </user-type>
+
+    </user-type-list>
+</pof-config>
