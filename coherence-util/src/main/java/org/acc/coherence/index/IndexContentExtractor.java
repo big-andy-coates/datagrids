@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * Created by Andy on 04/11/2014.
+ * @author datalorax - 04/11/2014.
  */
 
 @Portable

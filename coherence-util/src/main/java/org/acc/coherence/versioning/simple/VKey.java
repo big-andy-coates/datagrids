@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 /**
  * Wrapper type for versioned keys. Note, for testing this supports both Pof and Java serialisation.
+ * @author datalorax - 14/11/2014.
  */
 @Portable
 public class VKey<DomainKey> implements Versioned<DomainKey>, Serializable {

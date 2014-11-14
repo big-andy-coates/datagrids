@@ -1,7 +1,7 @@
 package org.acc.coherence.versioning.simple;
 
 /**
- * Created by andy on 28/06/2014.
+ * @author datalorax - 28/06/2014.
  */
 public interface Versioned<DomainType> {
     // Pof interface:

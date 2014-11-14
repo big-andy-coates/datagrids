@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * @author Andy Coates.
+ * @author datalorax - 14/11/2014.
  */
 @Portable
 public class SnapshotFilter implements IndexAwareFilter, Serializable {
