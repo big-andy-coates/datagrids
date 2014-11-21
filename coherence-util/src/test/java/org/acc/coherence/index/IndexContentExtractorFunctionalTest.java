@@ -1,6 +1,5 @@
 package org.acc.coherence.index;
 
-import com.sun.org.apache.xml.internal.utils.WrappedRuntimeException;
 import com.tangosol.io.pof.PortableException;
 import com.tangosol.io.pof.annotation.Portable;
 import com.tangosol.io.pof.annotation.PortableProperty;
@@ -70,9 +69,7 @@ public class IndexContentExtractorFunctionalTest extends ClusterBasedTest {
 
         // Then:
         assertThat(result, is(instanceOf(Set.class)));
-
-        Set<Integer> results = (Set<Integer>)result;
-        assertThat(results, containsInAnyOrder(0, 1, 2, 3, 4));
+        assertThat((Set<Integer>)result, containsInAnyOrder(0, 1, 2, 3, 4));
     }
 
     @Test
@@ -85,9 +82,7 @@ public class IndexContentExtractorFunctionalTest extends ClusterBasedTest {
 
         // Then:
         assertThat(result, is(instanceOf(Set.class)));
-
-        Set<Integer> results = (Set<Integer>)result;
-        assertThat(results, containsInAnyOrder("0", "1", "2", "3", "4"));
+        assertThat((Set<String>)result, containsInAnyOrder("0", "1", "2", "3", "4"));
     }
 
     @Test
@@ -101,9 +96,7 @@ public class IndexContentExtractorFunctionalTest extends ClusterBasedTest {
 
         // Then:
         assertThat(result, is(instanceOf(Set.class)));
-
-        Set<Integer> results = (Set<Integer>)result;
-        assertThat(results, containsInAnyOrder(0, 1, 2));
+        assertThat((Set<Integer>)result, containsInAnyOrder(0, 1, 2));
     }
 
     private static NamedCache givenSomeDataInCache(String cacheName, int count) {
