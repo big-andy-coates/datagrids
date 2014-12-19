@@ -1,4 +1,6 @@
 dependencies {
+    compile project(':common-util')
     compile files("$System.env.JAVA_3RD_PARTY_LIBS/coherence/12.1.3.0.0/coherence.jar")
-    testCompile group: 'org.littlegrid', name: 'littlegrid', version: '2.15.+'
+    compile 'com.oracle.coherence.incubator:coherence-common:12.2.+'
+    testCompile 'org.littlegrid:littlegrid:2.15.+'
 }

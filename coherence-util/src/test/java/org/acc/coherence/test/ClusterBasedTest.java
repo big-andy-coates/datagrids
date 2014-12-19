@@ -4,10 +4,7 @@ import com.google.common.primitives.Ints;
 import com.tangosol.net.CacheFactory;
 import org.littlegrid.ClusterMemberGroup;
 import org.littlegrid.ClusterMemberGroupUtils;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.*;
 
 import java.util.*;
 
@@ -34,14 +31,29 @@ public abstract class ClusterBasedTest {
     }
 
     @BeforeClass
-    public void beforeTests() {
+    public void beforeClass() {
         ensureCluster(requiredConfig);
         restorePropertyChanges();
+    }
+
+    @BeforeMethod
+    public void setUp() {
+        clearCluster();
     }
 
     @AfterMethod
     public void tearDown() {
         ensureCorrectMemberCounts();
+    }
+
+    protected void clearCluster() {
+        // Todo(ac):
+    }
+
+    protected void clearCaches(String... names) {
+        for (String name : names) {
+            CacheFactory.getCache(name).clear();
+        }
     }
 
     protected void givenAllPartitionsHaveMoved() {

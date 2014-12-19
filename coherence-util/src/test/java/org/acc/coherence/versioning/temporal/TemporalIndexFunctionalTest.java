@@ -244,10 +244,6 @@ public class TemporalIndexFunctionalTest extends ClusterBasedTest {
         ));
     }
 
-    // Todo(ac): test with complex type returned from arrived and with comparator
-    // Todo(ac): shouold work with no-pof extractors on pof cache
-
-
     private void givenWorkingWithPofCache() {
         versioned = reinitialiseCache("pof-versioned-test");
 

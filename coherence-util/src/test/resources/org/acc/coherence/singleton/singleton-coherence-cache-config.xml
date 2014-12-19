@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<cache-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="http://xmlns.oracle.com/coherence/coherence-cache-config"
+              xsi:schemaLocation="http://xmlns.oracle.com/coherence/coherence-cache-config coherence-cache-config.xsd">
+
+    <caching-scheme-mapping>
+        <cache-mapping>
+            <cache-name>acc.cluster.singletons</cache-name>
+            <scheme-name>distributed</scheme-name>
+            <interceptors>
+                <interceptor>
+                    <name>live-object-interceptor</name>
+                    <instance>
+                        <class-name>com.oracle.coherence.common.liveobjects.LiveObjectEventInterceptor</class-name>
+                    </instance>
+                </interceptor>
+            </interceptors>
+        </cache-mapping>
+
+        <cache-mapping>
+            <cache-name>result-*</cache-name>
+            <scheme-name>distributed</scheme-name>
+        </cache-mapping>
+
+    </caching-scheme-mapping>
+
+    <caching-schemes>
+
+        <distributed-scheme>
+            <scheme-name>distributed</scheme-name>
+            <service-name>DistributedCaches</service-name>
+
+            <backing-map-scheme>
+                <local-scheme>
+                    <scheme-ref>binary-backing-map</scheme-ref>
+                </local-scheme>
+            </backing-map-scheme>
+
+            <autostart>true</autostart>
+        </distributed-scheme>
+
+        <local-scheme>
+            <scheme-name>binary-backing-map</scheme-name>
+            <high-units>{back-size-limit 0}</high-units>
+            <unit-calculator>BINARY</unit-calculator>
+        </local-scheme>
+
+    </caching-schemes>
+</cache-config>
